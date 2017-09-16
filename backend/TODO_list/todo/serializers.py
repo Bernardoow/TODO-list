@@ -8,11 +8,14 @@ from todo.models import Task
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ('title', 'description', 'open_date',
+        fields = ('title', 'description', 'open_date', 'status',
                   'completed_date', 'isRemoved', 'positionOrder')
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ('title', 'description')
+        fields = ('title', 'description', 'open_date', 'status',
+                  'completed_date', 'isRemoved', 'positionOrder')
+        read_only_fields = ('open_date', 'completed_date', 'status',
+                            'isRemoved', 'positionOrder')
