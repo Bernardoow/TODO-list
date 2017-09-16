@@ -61,6 +61,7 @@ class TaskRetrieveSerializer(serializers.ModelSerializer):
 class TaskUpdateSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()
     positionOrderTimestampUpdated = serializers.SerializerMethodField()
+    positionOrder = serializers.IntegerField(min_value=0)
 
     class Meta:
         model = Task

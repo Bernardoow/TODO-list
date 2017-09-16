@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from rest_framework import viewsets
+from django.views.generic import TemplateView
 from rest_framework import generics
 
 from apps.todo.models import Task
@@ -9,14 +9,6 @@ from apps.todo.serializers import TaskSerializer
 from apps.todo.serializers import TaskCreateSerializer
 from apps.todo.serializers import TaskRetrieveSerializer
 from apps.todo.serializers import TaskUpdateSerializer
-
-
-class TaskViewSet(viewsets.ModelViewSet):
-    """
-    A simple ViewSet for viewing and editing tasks.
-    """
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
 
 
 class TaskCreate(generics.CreateAPIView):
@@ -40,3 +32,7 @@ class TaskUpdate(generics.UpdateAPIView):
 
 class TaskDestroy(generics.DestroyAPIView):
     queryset = Task.objects.all()
+
+
+class TaskIndex(TemplateView):
+    template_name = "index.html"

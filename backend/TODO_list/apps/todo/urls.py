@@ -1,10 +1,11 @@
 # urls.py
 from django.conf.urls import url
-from apps.todo.viewsets import TaskCreate
-from apps.todo.viewsets import TaskList
-from apps.todo.viewsets import TaskRetrieve
-from apps.todo.viewsets import TaskUpdate
-from apps.todo.viewsets import TaskDestroy
+from apps.todo.views import TaskCreate
+from apps.todo.views import TaskList
+from apps.todo.views import TaskRetrieve
+from apps.todo.views import TaskUpdate
+from apps.todo.views import TaskDestroy
+from apps.todo.views import TaskIndex
 
 
 urlpatterns = [
@@ -13,5 +14,6 @@ urlpatterns = [
     url(r'(?P<pk>[0-9]+)/destroy$',
         TaskDestroy.as_view(), name='task-destroy'),
     url(r'(?P<pk>[0-9]+)/$', TaskRetrieve.as_view(), name='task'),
-    url(r'$', TaskList.as_view(), name='tasks'),
+    url(r'list/$', TaskList.as_view(), name='tasks'),
+    url(r'$', TaskIndex.as_view(), name='tasks'),
 ]
