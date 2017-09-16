@@ -36,3 +36,7 @@ class TaskRetrieve(generics.RetrieveAPIView):
 class TaskUpdate(generics.UpdateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskUpdateSerializer
+
+
+class TaskDestroy(generics.DestroyAPIView):
+    queryset = Task.objects.all()
