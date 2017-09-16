@@ -4,8 +4,8 @@ from __future__ import unicode_literals
 from rest_framework import viewsets
 from rest_framework import generics
 
-from todo.models import Task
-from todo.serializers import TaskSerializer, TaskCreateSerializer
+from apps.todo.models import Task
+from apps.todo.serializers import TaskSerializer, TaskCreateSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -17,4 +17,9 @@ class TaskViewSet(viewsets.ModelViewSet):
 
 
 class TaskCreate(generics.CreateAPIView):
+    serializer_class = TaskCreateSerializer
+
+
+class TaskList(generics.ListAPIView):
+    queryset = Task.objects.all()
     serializer_class = TaskCreateSerializer

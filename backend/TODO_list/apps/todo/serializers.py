@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 
-from todo.models import Task
+from apps.todo.models import Task
 
 
 class TaskSerializer(serializers.ModelSerializer):

@@ -1,7 +1,7 @@
 from .base import *
 
 
-INSTALLED_APPS += ['corsheaders']
+INSTALLED_APPS += ['corsheaders', ]
 
 
 MIDDLEWARE += [
