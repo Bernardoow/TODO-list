@@ -19,3 +19,11 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 ]
+
+
+from todo.viewsets import TaskViewSet
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'tasks', TaskViewSet, base_name='task')
+urlpatterns += router.urls
