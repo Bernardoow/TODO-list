@@ -1,4 +1,4 @@
-module Page.TaskEdit exposing (Model, Msg(..), update, view)
+module Page.TaskEdit exposing (Model, Msg(..), update, view, initModel, initCmd)
 
 import Html exposing (..)
 import Html.Events exposing (onInput, onClick, on, targetValue)
@@ -9,6 +9,10 @@ import AlertTimerMessage as ATM
 import Task
 import Http
 import Json.Decode as Json
+import Navigation
+import Route
+import Process
+import Time
 
 
 main =
@@ -29,26 +33,38 @@ type alias Model =
     , title : String
     , description : String
     , status : String
+    , showModalConfirmation : Bool
     , alert_messages : ATM.Model
     }
 
 
-initCmd : List (Cmd Msg)
-initCmd =
+initCmd : Int -> List (Cmd Msg)
+initCmd id =
     let
         getTask =
-            Request.Task.retrieveTask 1
+            Request.Task.retrieveTask id
     in
         [ Task.attempt (TaskResult LoadingTask) getTask ]
+
+
+initModel : Model
+initModel =
+    Model
+        Nothing
+        ""
+        ""
+        ""
+        False
+        ATM.modelInit
 
 
 init : ( Model, Cmd Msg )
 init =
     let
         model =
-            Model Nothing "" "" "" ATM.modelInit
+            initModel
     in
-        model ! initCmd
+        model ! initCmd 1
 
 
 
@@ -67,6 +83,9 @@ type Msg
     | Save
     | AlertTimer ATM.Msg
     | TaskResult Mode (Result Http.Error Task)
+    | ToogleShowModalConfirmation
+    | Delete
+    | GoToBoard
 
 
 onChange tagger =
@@ -87,6 +106,16 @@ update msg model =
                 let
                     newMsg =
                         div [ class "alert alert-danger", attribute "role" "alert" ] [ text "Clique cancelado. Inseria um título." ]
+                            |> ATM.AddNewMessage 5
+
+                    ( updateModel, subCmd ) =
+                        ATM.update newMsg model.alert_messages
+                in
+                    { model | alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd ]
+            else if String.length model.title > 255 then
+                let
+                    newMsg =
+                        div [ class "alert alert-danger", attribute "role" "alert" ] [ text "Clique cancelado. Reduza o título." ]
                             |> ATM.AddNewMessage 5
 
                     ( updateModel, subCmd ) =
@@ -114,7 +143,7 @@ update msg model =
                                 taskUpdateEncoder model.title model.description model.status
 
                             request =
-                                Request.Task.updateTask 1 value
+                                Request.Task.updateTask task.id value
                         in
                             model ! [ Task.attempt (TaskResult UpdatedTask) request ]
 
@@ -145,14 +174,57 @@ update msg model =
 
                         status =
                             toString task.status
+
+                        cmd =
+                            Time.second
+                                * 2
+                                |> Process.sleep
+                                |> Task.andThen (always <| Task.succeed GoToBoard)
+                                |> Task.perform identity
                     in
-                        { model | task = Just task, title = task.title, description = task.description, alert_messages = updateModel, status = status } ! [ Cmd.map AlertTimer subCmd ]
+                        { model | task = Just task, title = task.title, description = task.description, alert_messages = updateModel, status = status } ! [ Cmd.map AlertTimer subCmd, cmd ]
 
         TaskResult mode (Err error) ->
-            model ! []
+            let
+                el =
+                    Debug.log "err" error
+            in
+                model ! []
 
         StatusInput status ->
             { model | status = status } ! []
+
+        ToogleShowModalConfirmation ->
+            { model | showModalConfirmation = model.showModalConfirmation |> not } ! []
+
+        Delete ->
+            case model.task of
+                Nothing ->
+                    model ! []
+
+                Just task ->
+                    let
+                        request =
+                            Request.Task.deleteTask task.id
+
+                        newMsg =
+                            div [ class "alert alert-success", attribute "role" "alert" ] [ text "Tarefa deletada com sucesso!" ]
+                                |> ATM.AddNewMessage 5
+
+                        ( updateModel, subCmd ) =
+                            ATM.update newMsg model.alert_messages
+
+                        cmd =
+                            Time.second
+                                * 2
+                                |> Process.sleep
+                                |> Task.andThen (always <| Task.succeed GoToBoard)
+                                |> Task.perform identity
+                    in
+                        { model | alert_messages = updateModel, showModalConfirmation = False } ! [ Task.attempt (TaskResult UpdatedTask) request, Cmd.map AlertTimer subCmd, cmd ]
+
+        GoToBoard ->
+            model ! [ Route.routeToString Route.Home |> Navigation.newUrl ]
 
 
 
@@ -166,6 +238,28 @@ subscriptions model =
 
 
 -- VIEW
+
+
+viewCheckDeleteOK : Model -> Html Msg
+viewCheckDeleteOK model =
+    if model.showModalConfirmation then
+        div [ style [ ( "position", "fixed" ), ( "z-index", "1" ), ( "width", "20%" ), ( "height", "100%" ), ( "left", "40%" ), ( "top", "20%" ) ] ]
+            [ div [ class "panel panel-warning" ]
+                [ div [ class "panel-heading" ]
+                    [ h3 [ class "panel-title" ]
+                        [ text "Confirma a remoção da tarefa" ]
+                    ]
+                , div [ class "panel-body" ]
+                    [ p [] [ text "Deseja deletar essa tarefa?" ]
+                    , button [ onClick Delete, class "btn btn-default" ]
+                        [ text "Sim" ]
+                    , button [ style [ ( "margin-left", "5px" ) ], onClick ToogleShowModalConfirmation, class "btn btn-default" ]
+                        [ text "Não" ]
+                    ]
+                ]
+            ]
+    else
+        div [] []
 
 
 view : Model -> Html Msg
@@ -182,6 +276,12 @@ view model =
                 , div [ class "page-header" ]
                     [ h1 [] [ text "Editar tarefa" ]
                     ]
+                , div
+                    [ class "row", style [ ( "margin-bottom", "10px" ) ] ]
+                    [ div [ class "col-md-12" ]
+                        [ button [ onClick GoToBoard, class "btn btn-primary pull-right" ] [ text "Voltar para o quadro de tarefas." ]
+                        ]
+                    ]
                 , Html.map AlertTimer (ATM.view model.alert_messages)
                 , Html.form [ class "form-horizontal" ]
                     [ div [ class "form-group" ]
@@ -190,6 +290,10 @@ view model =
                         , div [ class "col-sm-10" ]
                             [ input [ value model.title, onInput TitleInput, class "form-control", id "inputEmail3", placeholder "Digite o título da tarefa.", type_ "text" ]
                                 []
+                            , if String.length model.title > 255 then
+                                div [ class "alert alert-danger" ] [ text "Atenção. O título ultrapassou limite máximo de 255 caracteres." ]
+                              else
+                                div [] []
                             ]
                         ]
                     , div [ class "form-group" ]
@@ -216,6 +320,9 @@ view model =
                     [ div [ class "col-sm-offset-2 col-sm-10" ]
                         [ button [ onClick Save, class "btn btn-default" ]
                             [ text "Salvar" ]
+                        , button [ onClick ToogleShowModalConfirmation, class "btn btn-danger", style [ ( "margin-left", "5px" ) ] ]
+                            [ text "Remover" ]
                         ]
                     ]
+                , viewCheckDeleteOK model
                 ]

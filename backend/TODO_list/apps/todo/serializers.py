@@ -24,22 +24,38 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
+    positionOrderTimestampUpdated = serializers.SerializerMethodField()
+
     class Meta:
         model = Task
-        fields = ('title', 'description', 'open_date', 'status',
-                  'completed_date', 'isRemoved', 'positionOrder')
-        read_only_fields = ('open_date', 'completed_date', 'status',
-                            'isRemoved', 'positionOrder')
+        fields = ('id', 'title', 'description', 'open_date', 'status',
+                  'completed_date', 'isRemoved', 'positionOrder',
+                  'positionOrderTimestampUpdated')
+        read_only_fields = ('id', 'open_date', 'completed_date', 'status',
+                            'isRemoved', 'positionOrder',
+                            'positionOrderTimestampUpdated')
+
+    def get_positionOrderTimestampUpdated(self, obj):
+        return obj.positionOrderDateUpdated.timestamp()
 
 
 class TaskRetrieveSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField()
+    positionOrderTimestampUpdated = serializers.SerializerMethodField()
+
     class Meta:
         model = Task
-        fields = ('title', 'description', 'open_date', 'status',
-                  'completed_date', 'isRemoved', 'positionOrder')
-        read_only_fields = ('title', 'description', 'open_date',
+        fields = ('id', 'title', 'description', 'open_date', 'status',
+                  'completed_date', 'isRemoved', 'positionOrder',
+                  'positionOrderTimestampUpdated')
+        read_only_fields = ('id', 'title', 'description', 'open_date',
                             'completed_date', 'status',
-                            'isRemoved', 'positionOrder')
+                            'isRemoved', 'positionOrder',
+                            'positionOrderTimestampUpdated')
+
+    def get_positionOrderTimestampUpdated(self, obj):
+        return obj.positionOrderDateUpdated.timestamp()
 
 
 class TaskUpdateSerializer(serializers.ModelSerializer):

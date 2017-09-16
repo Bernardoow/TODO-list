@@ -1,4 +1,4 @@
-module Request.Task exposing (createTask, getTasks, retrieveTask, updateTask)
+module Request.Task exposing (createTask, getTasks, retrieveTask, updateTask, deleteTask)
 
 import HttpBuilder
 import Data.Task exposing (Task, taskDecoder, TaskDataResult, dataTaskDecoder)
@@ -61,5 +61,19 @@ updateTask id params =
     in
         HttpBuilder.patch url
             |> HttpBuilder.withJsonBody params
+            |> HttpBuilder.withExpect (Http.expectJson taskDecoder)
+            |> HttpBuilder.toTask
+
+
+deleteTask : Int -> Task.Task Http.Error Task
+deleteTask id =
+    let
+        idStr =
+            toString id
+
+        url =
+            baseUrl ++ idStr ++ "/destroy"
+    in
+        HttpBuilder.delete url
             |> HttpBuilder.withExpect (Http.expectJson taskDecoder)
             |> HttpBuilder.toTask

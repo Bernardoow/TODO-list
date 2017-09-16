@@ -1,4 +1,4 @@
-module Data.Task exposing (Task, TaskDataResult, taskDecoder, taskCreateEncoder, dataTaskDecoder, taskUpdateEncoder)
+module Data.Task exposing (Task, TaskDataResult, taskDecoder, taskCreateEncoder, dataTaskDecoder, taskUpdateEncoder, taskUpdatePositionEncoder)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline exposing (decode, required)
@@ -6,7 +6,8 @@ import Json.Encode exposing (Value)
 
 
 type alias Task =
-    { title : String
+    { id : Int
+    , title : String
     , description : String
     , openDate : String
     , status : Int
@@ -14,6 +15,7 @@ type alias Task =
       isRemoved : Bool
     , positionOrder : Int
     , completedDate : Maybe String
+    , positionOrderDateUpdated : Float
     }
 
 
@@ -28,6 +30,7 @@ type alias TaskDataResult =
 taskDecoder : Decoder Task
 taskDecoder =
     decode Task
+        |> required "id" Decode.int
         |> required "title" Decode.string
         |> required "description" Decode.string
         |> required "open_date" Decode.string
@@ -35,6 +38,7 @@ taskDecoder =
         |> required "isRemoved" Decode.bool
         |> required "positionOrder" Decode.int
         |> required "completed_date" (Decode.nullable Decode.string)
+        |> required "positionOrderTimestampUpdated" Decode.float
 
 
 dataTaskDecoder : Decoder TaskDataResult
@@ -65,4 +69,11 @@ taskUpdateEncoder title description status =
         [ ( "title", Json.Encode.string title )
         , ( "description", Json.Encode.string description )
         , ( "status", Json.Encode.string status )
+        ]
+
+
+taskUpdatePositionEncoder : Int -> Value
+taskUpdatePositionEncoder position =
+    Json.Encode.object
+        [ ( "positionOrder", Json.Encode.int position )
         ]

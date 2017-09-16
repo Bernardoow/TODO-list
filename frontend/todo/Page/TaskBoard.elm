@@ -1,9 +1,9 @@
-module Page.TaskBoard exposing (Model, Msg(..), update, view)
+module Page.TaskBoard exposing (Model, Msg(..), update, view, initModel, initCmd)
 
 import Html exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Html.Attributes exposing (..)
-import Data.Task exposing (Task, TaskDataResult)
+import Data.Task exposing (Task, TaskDataResult, taskUpdatePositionEncoder)
 import Request.Task
 import AlertTimerMessage as ATM
 import Task
@@ -11,6 +11,9 @@ import Http
 import Date.Extra.Format exposing (format)
 import Date.Extra.Config.Config_pt_br exposing (config)
 import Date
+import Html5.DragDrop as DragDrop
+import Navigation
+import Route
 
 
 main =
@@ -30,6 +33,7 @@ type alias Model =
     { alert_messages : ATM.Model
     , tasksData : Maybe TaskDataResult
     , loadingTasks : Bool
+    , dragDrop : DragDrop.Model Int Int
     }
 
 
@@ -45,11 +49,16 @@ initCmd =
         [ Task.attempt TasksResult getTasks ]
 
 
+initModel : Model
+initModel =
+    Model ATM.modelInit Nothing True DragDrop.init
+
+
 init : ( Model, Cmd Msg )
 init =
     let
         model =
-            Model ATM.modelInit Nothing True
+            initModel
     in
         model ! initCmd
 
@@ -61,7 +70,11 @@ init =
 type Msg
     = AlertTimer ATM.Msg
     | TasksResult (Result Http.Error TaskDataResult)
+    | TaskUpdatePositionResult (Result Http.Error Task)
     | PaginationChange String
+    | DragDropMsg (DragDrop.Msg Int Int)
+    | CreateNewTask
+    | OpenTaskDetails Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -75,15 +88,44 @@ update msg model =
                 { model | alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd ]
 
         TasksResult (Ok taskData) ->
-            let
-                deb =
-                    Debug.log "s" taskData
-            in
-                { model | tasksData = Just taskData, loadingTasks = False } ! []
+            { model | tasksData = Just taskData, loadingTasks = False } ! []
 
         TasksResult (Err error) ->
             --TODO GET ERROR
             model ! []
+
+        TaskUpdatePositionResult (Ok task) ->
+            let
+                el =
+                    Debug.log "EWntrou" "aq"
+            in
+                case model.tasksData of
+                    Nothing ->
+                        model ! []
+
+                    Just tasksData ->
+                        let
+                            el =
+                                Debug.log "EWntrou" "aq"
+
+                            list =
+                                List.map
+                                    (\item ->
+                                        if item.id == task.id then
+                                            task
+                                        else
+                                            item
+                                    )
+                                    tasksData.list
+                        in
+                            { model | tasksData = Just { tasksData | list = list } } ! []
+
+        TaskUpdatePositionResult (Err error) ->
+            let
+                el =
+                    Debug.log "EWntrou" error
+            in
+                model ! []
 
         PaginationChange newUrl ->
             let
@@ -92,6 +134,88 @@ update msg model =
                         |> Request.Task.getTasks
             in
                 model ! [ Task.attempt TasksResult getTasks ]
+
+        DragDropMsg msg_ ->
+            let
+                ( model_, result ) =
+                    DragDrop.update msg_ model.dragDrop
+
+                el =
+                    Debug.log "" result
+
+                ( tasksData, cmds ) =
+                    case model.tasksData of
+                        Nothing ->
+                            ( model.tasksData, [ Cmd.none ] )
+
+                        Just tasksData ->
+                            let
+                                doNewPosition drag item =
+                                    case drag of
+                                        Nothing ->
+                                            item
+
+                                        Just d ->
+                                            let
+                                                ( id, pos ) =
+                                                    d
+                                            in
+                                                if item.id == id then
+                                                    { item | positionOrder = pos }
+                                                else
+                                                    item
+
+                                cmds =
+                                    case result of
+                                        Nothing ->
+                                            []
+
+                                        Just r ->
+                                            let
+                                                ( id, pos ) =
+                                                    r
+
+                                                params =
+                                                    taskUpdatePositionEncoder pos
+
+                                                updateTask =
+                                                    Request.Task.updateTask id params
+
+                                                maybeTask =
+                                                    List.sortWith customComp tasksData.list
+                                                        |> List.indexedMap (,)
+                                                        |> List.filter (\( index, _ ) -> index == pos)
+                                                        |> List.head
+
+                                                newCmd =
+                                                    case maybeTask of
+                                                        Nothing ->
+                                                            Cmd.none
+
+                                                        Just ( index, task ) ->
+                                                            let
+                                                                params =
+                                                                    taskUpdatePositionEncoder (index + 1)
+
+                                                                request =
+                                                                    Request.Task.updateTask task.id params
+                                                            in
+                                                                Task.attempt TaskUpdatePositionResult request
+                                            in
+                                                [ Task.attempt TaskUpdatePositionResult updateTask, newCmd ]
+                            in
+                                ( Just { tasksData | list = List.map (doNewPosition result) tasksData.list }, cmds )
+
+                ela =
+                    Debug.log "das" cmds
+            in
+                { model | dragDrop = model_ } ! cmds
+
+        CreateNewTask ->
+            model ! [ Route.routeToString Route.NewTask |> Navigation.newUrl ]
+
+        OpenTaskDetails id ->
+            model ! [ id |> Route.Task |> Route.routeToString |> Navigation.newUrl ]
 
 
 
@@ -107,14 +231,20 @@ subscriptions model =
 -- VIEW
 
 
-viewTaskEntry : Task -> Html Msg
-viewTaskEntry task =
+viewTaskEntry : ( Int, Task ) -> Html Msg
+viewTaskEntry ( index, task ) =
     let
         date =
             Date.fromString task.openDate
+
+        css =
+            class "col-md-4" :: DragDrop.droppable DragDropMsg index
+
+        css2 =
+            class "panel panel-default" :: DragDrop.draggable DragDropMsg task.id
     in
-        div [ class "col-md-4" ]
-            [ div [ class "panel panel-default" ]
+        div css
+            [ div css2
                 [ div [ class "panel-heading" ]
                     [ h3 [ class "panel-title" ]
                         [ text task.title ]
@@ -129,17 +259,41 @@ viewTaskEntry task =
                                     date_text =
                                         format config config.format.dateTime data
                                 in
-                                    div [ class "col-md-6" ]
+                                    div [ class "col-md-5" ]
                                         [ i [ attribute "aria-hidden" "true", class "fa fa-calendar" ] [ strong [ style [ ( "margin-left", "5px" ) ] ] [ text "Data Abertura:" ] ]
                                         , span [ style [ ( "display", "block" ) ] ] [ text date_text ]
                                         ]
 
                             Err error ->
                                 div [] []
+                        , div [ class "col-md-3" ]
+                            [ i [ attribute "aria-hidden" "true", class "fa fa-list-ol" ] [ strong [ style [ ( "margin-left", "5px" ) ] ] [ text "Posição:" ] ]
+                            , span [ class "badge" ] [ (index + 1) |> toString |> text ]
+                            ]
+                        , div [ class "col-md-2" ]
+                            [ button [ OpenTaskDetails task.id |> onClick, class "btn btn-default" ] [ text "Detalhes" ]
+                            ]
                         ]
                     ]
                 ]
             ]
+
+
+customComp item item2 =
+    case ( compare item.positionOrder item2.positionOrder, compare item.positionOrderDateUpdated item2.positionOrderDateUpdated ) of
+        ( EQ, c ) ->
+            case c of
+                LT ->
+                    GT
+
+                GT ->
+                    LT
+
+                EQ ->
+                    EQ
+
+        ( c1, c2 ) ->
+            c1
 
 
 viewTaskBoard : Model -> List (Html Msg)
@@ -153,7 +307,9 @@ viewTaskBoard model =
                 []
 
             Just tasksData ->
-                List.map viewTaskEntry tasksData.list
+                List.sortWith customComp tasksData.list
+                    |> List.indexedMap (,)
+                    |> List.map viewTaskEntry
 
 
 viewPagination : Model -> Html Msg
@@ -219,6 +375,11 @@ view model =
             []
         , div [ class "page-header" ]
             [ h1 [] [ text "Quadro de tarefas" ]
+            ]
+        , div [ class "row", style [ ( "margin-bottom", "10px" ) ] ]
+            [ div [ class "col-md-12" ]
+                [ button [ onClick CreateNewTask, class "btn btn-primary pull-right" ] [ text "Criar Nova Tarefa" ]
+                ]
             ]
         , viewTaskBoard model |> div [ class "row" ]
         , viewPagination model

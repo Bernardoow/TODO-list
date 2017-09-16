@@ -1,4 +1,4 @@
-module Page.TaskCreate exposing (Model, Msg(..), update, view)
+module Page.TaskCreate exposing (Model, Msg(..), update, view, initModel)
 
 import Html exposing (..)
 import Html.Events exposing (onInput, onClick)
@@ -8,6 +8,10 @@ import Request.Task
 import AlertTimerMessage as ATM
 import Task
 import Http
+import Process
+import Route
+import Navigation
+import Time
 
 
 main =
@@ -30,11 +34,16 @@ type alias Model =
     }
 
 
+initModel : Model
+initModel =
+    Model "" "" ATM.modelInit
+
+
 init : ( Model, Cmd Msg )
 init =
     let
         model =
-            Model "" "" ATM.modelInit
+            initModel
     in
         ( model, Cmd.none )
 
@@ -49,6 +58,7 @@ type Msg
     | Save
     | AlertTimer ATM.Msg
     | TaskResult (Result Http.Error Task)
+    | GoToBoard
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -65,6 +75,16 @@ update msg model =
                 let
                     newMsg =
                         div [ class "alert alert-danger", attribute "role" "alert" ] [ text "Clique cancelado. Inseria um título." ]
+                            |> ATM.AddNewMessage 5
+
+                    ( updateModel, subCmd ) =
+                        ATM.update newMsg model.alert_messages
+                in
+                    { model | alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd ]
+            else if String.length model.title > 255 then
+                let
+                    newMsg =
+                        div [ class "alert alert-danger", attribute "role" "alert" ] [ text "Clique cancelado. Reduza o título." ]
                             |> ATM.AddNewMessage 5
 
                     ( updateModel, subCmd ) =
@@ -106,11 +126,21 @@ update msg model =
 
                 ( updateModel, subCmd ) =
                     ATM.update newMsg model.alert_messages
+
+                cmd =
+                    Time.second
+                        * 3
+                        |> Process.sleep
+                        |> Task.andThen (always <| Task.succeed GoToBoard)
+                        |> Task.perform identity
             in
-                { model | title = "", description = "", alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd ]
+                { model | title = "", description = "", alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd, cmd ]
 
         TaskResult (Err error) ->
             model ! []
+
+        GoToBoard ->
+            model ! [ Route.routeToString Route.Home |> Navigation.newUrl ]
 
 
 
@@ -135,6 +165,11 @@ view model =
         , div [ class "page-header" ]
             [ h1 [] [ text "Nota tarefa" ]
             ]
+        , div [ class "row", style [ ( "margin-bottom", "10px" ) ] ]
+            [ div [ class "col-md-12" ]
+                [ button [ onClick GoToBoard, class "btn btn-primary pull-right" ] [ text "Voltar para o quadro de tarefas." ]
+                ]
+            ]
         , Html.map AlertTimer (ATM.view model.alert_messages)
         , Html.form [ class "form-horizontal" ]
             [ div [ class "form-group" ]
@@ -143,6 +178,10 @@ view model =
                 , div [ class "col-sm-10" ]
                     [ input [ value model.title, onInput TitleInput, class "form-control", id "inputEmail3", placeholder "Digite o título da tarefa.", type_ "text" ]
                         []
+                    , if String.length model.title > 255 then
+                        div [ class "alert alert-danger" ] [ text "Atenção. O título ultrapassou limite máximo de 255 caracteres." ]
+                      else
+                        div [] []
                     ]
                 ]
             , div [ class "form-group" ]
