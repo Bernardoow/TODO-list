@@ -102,3 +102,10 @@ venv.bak/
 .mypy_cache/
 
 db.sqlite3
+
+
+
+# elm-package generated files
+elm-stuff
+# elm-repl generated files
+repl-temp-*

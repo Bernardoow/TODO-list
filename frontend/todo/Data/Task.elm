@@ -1,18 +1,19 @@
-module Data.Task exposing (Task)
+module Data.Task exposing (Task, taskDecoder, taskCreateEncoder)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline exposing (decode, required)
-import Json.Encode
+import Json.Encode exposing (Value)
 
 
 type alias Task =
     { title : String
     , description : String
-    , open_date : String
+    , openDate : String
     , status : Int
     , --TODO UnionType
       isRemoved : Bool
-    , poisitionOrder : Int
+    , positionOrder : Int
+    , completedDate : Maybe String
     }
 
 
@@ -24,7 +25,8 @@ taskDecoder =
         |> required "open_date" Decode.string
         |> required "status" Decode.int
         |> required "isRemoved" Decode.bool
-        |> required "poisitionOrder" Decode.int
+        |> required "positionOrder" Decode.int
+        |> required "completed_date" (Decode.nullable Decode.string)
 
 
 taskCreateEncoder : String -> String -> Value

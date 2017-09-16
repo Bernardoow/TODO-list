@@ -1,13 +1,13 @@
--- Read more about this program in the official Elm guide:
--- https://guide.elm-lang.org/architecture/effects/random.html
-
-
-module Main exposing (..)
+module Page.TaskCreate exposing (Model, Msg(..), update, view)
 
 import Html exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Html.Attributes exposing (..)
+import Data.Task exposing (Task, taskCreateEncoder)
+import Request.Task
 import AlertTimerMessage as ATM
+import Task
+import Http
 
 
 main =
@@ -48,6 +48,7 @@ type Msg
     | DescriptionInput String
     | Save
     | AlertTimer ATM.Msg
+    | TaskResult (Result Http.Error Task)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -81,7 +82,14 @@ update msg model =
                 in
                     { model | alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd ]
             else
-                model ! []
+                let
+                    value =
+                        taskCreateEncoder model.title model.description
+
+                    request =
+                        Request.Task.getTasks value
+                in
+                    model ! [ Task.attempt TaskResult request ]
 
         AlertTimer msg ->
             let
@@ -89,6 +97,20 @@ update msg model =
                     ATM.update msg model.alert_messages
             in
                 { model | alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd ]
+
+        TaskResult (Ok task) ->
+            let
+                newMsg =
+                    div [ class "alert alert-success", attribute "role" "alert" ] [ text "Tarefa criada com sucesso!" ]
+                        |> ATM.AddNewMessage 5
+
+                ( updateModel, subCmd ) =
+                    ATM.update newMsg model.alert_messages
+            in
+                { model | title = "", description = "", alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd ]
+
+        TaskResult (Err error) ->
+            model ! []
 
 
 
@@ -116,7 +138,7 @@ view model =
                 [ label [ class "col-sm-2 control-label", for "inputEmail3" ]
                     [ text "Título" ]
                 , div [ class "col-sm-10" ]
-                    [ input [ onInput TitleInput, class "form-control", id "inputEmail3", placeholder "Digite o título da tarefa.", type_ "text" ]
+                    [ input [ value model.title, onInput TitleInput, class "form-control", id "inputEmail3", placeholder "Digite o título da tarefa.", type_ "text" ]
                         []
                     ]
                 ]
@@ -124,7 +146,7 @@ view model =
                 [ label [ class "col-sm-2 control-label", for "inputPassword3" ]
                     [ text "Descrição" ]
                 , div [ class "col-sm-10" ]
-                    [ textarea [ onInput DescriptionInput, class "form-control", attribute "rows" "3", placeholder "Descreva a tarefa." ] []
+                    [ textarea [ value model.description, onInput DescriptionInput, class "form-control", attribute "rows" "3", placeholder "Descreva a tarefa." ] []
                     ]
                 ]
             ]
