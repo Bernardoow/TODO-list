@@ -30,10 +30,12 @@ class Task(models.Model):
 
     isRemoved = models.BooleanField(default=False)
     positionOrder = models.PositiveSmallIntegerField(default=1)
+    positionOrderDateUpdated = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Task"
         verbose_name_plural = "Tasks"
+        ordering = ['positionOrder', '-positionOrderDateUpdated']
 
     def __str__(self):
         return "{} - {} - {}".format(self.title, self.description, self.status)
