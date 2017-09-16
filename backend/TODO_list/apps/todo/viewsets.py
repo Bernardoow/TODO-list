@@ -5,7 +5,9 @@ from rest_framework import viewsets
 from rest_framework import generics
 
 from apps.todo.models import Task
-from apps.todo.serializers import TaskSerializer, TaskCreateSerializer
+from apps.todo.serializers import TaskSerializer
+from apps.todo.serializers import TaskCreateSerializer
+from apps.todo.serializers import TaskRetrieveSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -23,3 +25,8 @@ class TaskCreate(generics.CreateAPIView):
 class TaskList(generics.ListAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskCreateSerializer
+
+
+class TaskRetrieve(generics.RetrieveAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskRetrieveSerializer

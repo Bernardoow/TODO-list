@@ -19,3 +19,13 @@ class TaskCreateSerializer(serializers.ModelSerializer):
                   'completed_date', 'isRemoved', 'positionOrder')
         read_only_fields = ('open_date', 'completed_date', 'status',
                             'isRemoved', 'positionOrder')
+
+
+class TaskRetrieveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = ('title', 'description', 'open_date', 'status',
+                  'completed_date', 'isRemoved', 'positionOrder')
+        read_only_fields = ('title', 'description', 'open_date',
+                            'completed_date', 'status',
+                            'isRemoved', 'positionOrder')
