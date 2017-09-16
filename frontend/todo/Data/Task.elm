@@ -1,4 +1,4 @@
-module Data.Task exposing (Task, taskDecoder, taskCreateEncoder)
+module Data.Task exposing (Task, TaskDataResult, taskDecoder, taskCreateEncoder, dataTaskDecoder)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline exposing (decode, required)
@@ -17,6 +17,14 @@ type alias Task =
     }
 
 
+type alias TaskDataResult =
+    { count : Int
+    , next : Maybe String
+    , previous : Maybe String
+    , list : List Task
+    }
+
+
 taskDecoder : Decoder Task
 taskDecoder =
     decode Task
@@ -27,6 +35,20 @@ taskDecoder =
         |> required "isRemoved" Decode.bool
         |> required "positionOrder" Decode.int
         |> required "completed_date" (Decode.nullable Decode.string)
+
+
+dataTaskDecoder : Decoder TaskDataResult
+dataTaskDecoder =
+    Pipeline.decode TaskDataResult
+        |> Pipeline.required "count" Decode.int
+        |> Pipeline.required "next" (Decode.nullable Decode.string)
+        |> Pipeline.required "previous" (Decode.nullable Decode.string)
+        |> Pipeline.required "results" tasksDecoder
+
+
+tasksDecoder : Decoder (List Task)
+tasksDecoder =
+    Decode.list taskDecoder
 
 
 taskCreateEncoder : String -> String -> Value

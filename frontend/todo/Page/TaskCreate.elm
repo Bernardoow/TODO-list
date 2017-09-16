@@ -87,7 +87,7 @@ update msg model =
                         taskCreateEncoder model.title model.description
 
                     request =
-                        Request.Task.getTasks value
+                        Request.Task.createTask value
                 in
                     model ! [ Task.attempt TaskResult request ]
 
@@ -129,7 +129,10 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ div [ class "page-header" ]
+        [ node "link"
+            [ attribute "crossorigin" "anonymous", href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", attribute "integrity" "sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u", rel "stylesheet" ]
+            []
+        , div [ class "page-header" ]
             [ h1 [] [ text "Nota tarefa" ]
             ]
         , Html.map AlertTimer (ATM.view model.alert_messages)
