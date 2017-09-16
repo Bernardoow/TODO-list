@@ -8,6 +8,7 @@ from apps.todo.models import Task
 from apps.todo.serializers import TaskSerializer
 from apps.todo.serializers import TaskCreateSerializer
 from apps.todo.serializers import TaskRetrieveSerializer
+from apps.todo.serializers import TaskUpdateSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -34,4 +35,4 @@ class TaskRetrieve(generics.RetrieveAPIView):
 
 class TaskUpdate(generics.UpdateAPIView):
     queryset = Task.objects.all()
-    serializer_class = TaskRetrieveSerializer
+    serializer_class = TaskUpdateSerializer

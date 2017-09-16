@@ -1,4 +1,4 @@
-module Data.Task exposing (Task, TaskDataResult, taskDecoder, taskCreateEncoder, dataTaskDecoder)
+module Data.Task exposing (Task, TaskDataResult, taskDecoder, taskCreateEncoder, dataTaskDecoder, taskUpdateEncoder)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline exposing (decode, required)
@@ -56,4 +56,13 @@ taskCreateEncoder title description =
     Json.Encode.object
         [ ( "title", Json.Encode.string title )
         , ( "description", Json.Encode.string description )
+        ]
+
+
+taskUpdateEncoder : String -> String -> String -> Value
+taskUpdateEncoder title description status =
+    Json.Encode.object
+        [ ( "title", Json.Encode.string title )
+        , ( "description", Json.Encode.string description )
+        , ( "status", Json.Encode.string status )
         ]
