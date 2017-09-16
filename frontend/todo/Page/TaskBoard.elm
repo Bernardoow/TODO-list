@@ -95,37 +95,26 @@ update msg model =
             model ! []
 
         TaskUpdatePositionResult (Ok task) ->
-            let
-                el =
-                    Debug.log "EWntrou" "aq"
-            in
-                case model.tasksData of
-                    Nothing ->
-                        model ! []
+            case model.tasksData of
+                Nothing ->
+                    model ! []
 
-                    Just tasksData ->
-                        let
-                            el =
-                                Debug.log "EWntrou" "aq"
-
-                            list =
-                                List.map
-                                    (\item ->
-                                        if item.id == task.id then
-                                            task
-                                        else
-                                            item
-                                    )
-                                    tasksData.list
-                        in
-                            { model | tasksData = Just { tasksData | list = list } } ! []
+                Just tasksData ->
+                    let
+                        list =
+                            List.map
+                                (\item ->
+                                    if item.id == task.id then
+                                        task
+                                    else
+                                        item
+                                )
+                                tasksData.list
+                    in
+                        { model | tasksData = Just { tasksData | list = list } } ! []
 
         TaskUpdatePositionResult (Err error) ->
-            let
-                el =
-                    Debug.log "EWntrou" error
-            in
-                model ! []
+            model ! []
 
         PaginationChange newUrl ->
             let
@@ -139,9 +128,6 @@ update msg model =
             let
                 ( model_, result ) =
                     DragDrop.update msg_ model.dragDrop
-
-                el =
-                    Debug.log "" result
 
                 ( tasksData, cmds ) =
                     case model.tasksData of
@@ -205,9 +191,6 @@ update msg model =
                                                 [ Task.attempt TaskUpdatePositionResult updateTask, newCmd ]
                             in
                                 ( Just { tasksData | list = List.map (doNewPosition result) tasksData.list }, cmds )
-
-                ela =
-                    Debug.log "das" cmds
             in
                 { model | dragDrop = model_ } ! cmds
 
@@ -238,7 +221,7 @@ viewTaskEntry ( index, task ) =
             Date.fromString task.openDate
 
         css =
-            class "col-md-4" :: DragDrop.droppable DragDropMsg index
+            class "col-md-4 col-xs-6 col-sm-4 col-lg-4" :: DragDrop.droppable DragDropMsg index
 
         css2 =
             class "panel panel-default" :: DragDrop.draggable DragDropMsg task.id
@@ -246,32 +229,33 @@ viewTaskEntry ( index, task ) =
         div css
             [ div css2
                 [ div [ class "panel-heading" ]
-                    [ h3 [ class "panel-title" ]
+                    [ h3 [ style [ ( "overflow", "hidden" ), ( "white-space", "nowrap" ), ( "text-overflow", "ellipsis" ) ], class "panel-title" ]
                         [ text task.title ]
                     ]
-                , div [ class "panel-body" ]
-                    [ text task.description
-                    , hr [] []
-                    , div [ class "row" ]
+                , div [ style [ ( "min-height", "200px" ), ( "word-break", "break-all" ) ], class "panel-body" ]
+                    [ p [ style [] ] [ text task.description ]
+                    ]
+                , div [ class "panel-footer" ]
+                    [ div [ class "row" ]
                         [ case date of
                             Ok data ->
                                 let
                                     date_text =
                                         format config config.format.dateTime data
                                 in
-                                    div [ class "col-md-5" ]
+                                    div [ class "col-md-5 col-xs-5 col-sm-5 col-lg-5" ]
                                         [ i [ attribute "aria-hidden" "true", class "fa fa-calendar" ] [ strong [ style [ ( "margin-left", "5px" ) ] ] [ text "Data Abertura:" ] ]
                                         , span [ style [ ( "display", "block" ) ] ] [ text date_text ]
                                         ]
 
                             Err error ->
                                 div [] []
-                        , div [ class "col-md-3" ]
+                        , div [ class "col-md-3 col-xs-3 col-sm-3 col-lg-3" ]
                             [ i [ attribute "aria-hidden" "true", class "fa fa-list-ol" ] [ strong [ style [ ( "margin-left", "5px" ) ] ] [ text "Posição:" ] ]
                             , span [ class "badge" ] [ (index + 1) |> toString |> text ]
                             ]
-                        , div [ class "col-md-2" ]
-                            [ button [ OpenTaskDetails task.id |> onClick, class "btn btn-default" ] [ text "Detalhes" ]
+                        , div [ class "col-md-2 col-xs-2 col-sm-2 col-lg-2" ]
+                            [ button [ "btnDetail" ++ (task.id |> toString) |> id, OpenTaskDetails task.id |> onClick, class "btn btn-default" ] [ text "Detalhes" ]
                             ]
                         ]
                     ]
@@ -336,7 +320,7 @@ viewPagination model =
 
                             Just url ->
                                 li [ class "previous" ]
-                                    [ a [ PaginationChange url |> onClick ]
+                                    [ a [ style [ ( "cursor", "pointer" ) ], PaginationChange url |> onClick ]
                                         [ span [ attribute "aria-hidden" "true" ]
                                             [ text "←" ]
                                         , text "Anterior"
@@ -345,7 +329,7 @@ viewPagination model =
                         , case tasksData.next of
                             Nothing ->
                                 li [ class "next disabled" ]
-                                    [ a [ href "#" ]
+                                    [ a []
                                         [ text "Próxima"
                                         , span [ attribute "aria-hidden" "true" ]
                                             [ text "→" ]
@@ -354,7 +338,7 @@ viewPagination model =
 
                             Just url ->
                                 li [ class "next" ]
-                                    [ a [ PaginationChange url |> onClick, href "#" ]
+                                    [ a [ style [ ( "cursor", "pointer" ) ], PaginationChange url |> onClick ]
                                         [ text "Próxima"
                                         , span [ attribute "aria-hidden" "true" ]
                                             [ text "→" ]
@@ -367,18 +351,12 @@ viewPagination model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ node "link"
-            [ attribute "crossorigin" "anonymous", href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", attribute "integrity" "sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u", rel "stylesheet" ]
-            []
-        , node "link"
-            [ href "https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css", rel "stylesheet" ]
-            []
-        , div [ class "page-header" ]
-            [ h1 [] [ text "Quadro de tarefas" ]
+        [ div [ class "page-header" ]
+            [ h1 [ class "titleBoard" ] [ text "Quadro de tarefas" ]
             ]
         , div [ class "row", style [ ( "margin-bottom", "10px" ) ] ]
-            [ div [ class "col-md-12" ]
-                [ button [ onClick CreateNewTask, class "btn btn-primary pull-right" ] [ text "Criar Nova Tarefa" ]
+            [ div [ class "col-md-12 col-xs-12 col-sm-12 col-lg-12" ]
+                [ button [ id "btnCreateNewTask", onClick CreateNewTask, class "btn btn-primary pull-right" ] [ text "Criar Nova Tarefa" ]
                 ]
             ]
         , viewTaskBoard model |> div [ class "row" ]

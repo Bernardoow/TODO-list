@@ -26,7 +26,7 @@ getTasks urlParams =
         url =
             case urlParams of
                 Nothing ->
-                    baseUrl ++ ""
+                    baseUrl ++ "list/"
 
                 Just url ->
                     url

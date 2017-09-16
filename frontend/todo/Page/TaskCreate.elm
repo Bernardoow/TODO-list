@@ -137,7 +137,11 @@ update msg model =
                 { model | title = "", description = "", alert_messages = updateModel } ! [ Cmd.map AlertTimer subCmd, cmd ]
 
         TaskResult (Err error) ->
-            model ! []
+            let
+                elm =
+                    Debug.log "da" error
+            in
+                model ! []
 
         GoToBoard ->
             model ! [ Route.routeToString Route.Home |> Navigation.newUrl ]
@@ -159,24 +163,21 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ node "link"
-            [ attribute "crossorigin" "anonymous", href "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", attribute "integrity" "sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u", rel "stylesheet" ]
-            []
-        , div [ class "page-header" ]
-            [ h1 [] [ text "Nota tarefa" ]
+        [ div [ class "page-header" ]
+            [ h1 [ class "" ] [ text "Nota tarefa" ]
             ]
         , div [ class "row", style [ ( "margin-bottom", "10px" ) ] ]
-            [ div [ class "col-md-12" ]
+            [ div [ class "col-sm-offset-2 col-sm-10  col-md-offset-2 col-md-10  col-xs-offset-2 col-xs-10  col-lg-offset-2 col-lg-10" ]
                 [ button [ onClick GoToBoard, class "btn btn-primary pull-right" ] [ text "Voltar para o quadro de tarefas." ]
                 ]
             ]
         , Html.map AlertTimer (ATM.view model.alert_messages)
         , Html.form [ class "form-horizontal" ]
             [ div [ class "form-group" ]
-                [ label [ class "col-sm-2 control-label", for "inputEmail3" ]
+                [ label [ class "col-sm-2 control-label col-xs-2 col-md-2 col-lg-2", for "inputTitle" ]
                     [ text "Título" ]
-                , div [ class "col-sm-10" ]
-                    [ input [ value model.title, onInput TitleInput, class "form-control", id "inputEmail3", placeholder "Digite o título da tarefa.", type_ "text" ]
+                , div [ class "col-md-10 col-xs-10 col-sm-10 col-lg-10" ]
+                    [ input [ value model.title, onInput TitleInput, class "form-control", id "inputTitle", placeholder "Digite o título da tarefa.", type_ "text" ]
                         []
                     , if String.length model.title > 255 then
                         div [ class "alert alert-danger" ] [ text "Atenção. O título ultrapassou limite máximo de 255 caracteres." ]
@@ -185,16 +186,16 @@ view model =
                     ]
                 ]
             , div [ class "form-group" ]
-                [ label [ class "col-sm-2 control-label", for "inputPassword3" ]
+                [ label [ class "col-sm-2 control-label col-xs-2 col-md-2 col-lg-2", for "inputDescription" ]
                     [ text "Descrição" ]
-                , div [ class "col-sm-10" ]
-                    [ textarea [ value model.description, onInput DescriptionInput, class "form-control", attribute "rows" "3", placeholder "Descreva a tarefa." ] []
+                , div [ class "col-md-10 col-xs-10 col-sm-10 col-lg-10" ]
+                    [ textarea [ id "inputDescription", value model.description, onInput DescriptionInput, class "form-control", attribute "rows" "3", placeholder "Descreva a tarefa." ] []
                     ]
                 ]
             ]
         , div [ class "form-group" ]
-            [ div [ class "col-sm-offset-2 col-sm-10" ]
-                [ button [ onClick Save, class "btn btn-default" ]
+            [ div [ class "col-sm-offset-2 col-sm-10  col-md-offset-2 col-md-10  col-xs-offset-2 col-xs-10  col-lg-offset-2 col-lg-10" ]
+                [ button [ id "btnSave", onClick Save, class "btn btn-default" ]
                     [ text "Salvar" ]
                 ]
             ]
